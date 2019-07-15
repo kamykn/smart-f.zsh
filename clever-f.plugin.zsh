@@ -1,39 +1,80 @@
 cleverf() {
-    local tmp_prev_pos=$prev_pos
+	local search_type=$1
 
     # vi-find-next-charでキャンセルされるよりも前に初期化しておく
     cleverf-reset-prev-match
 
-    local current_pos=$((${#LBUFFER}+1))
-    local is_repeat_found=false
-    if [[ $tmp_prev_pos -eq $current_pos ]]; then
-        zle .vi-repeat-find 2> /dev/null
+	if [[ ! -v prev_cursor_pos ]]; then
+		prev_cursor_pos=-1
+	fi
 
-        if [[ $? -eq 0 ]]; then
-            is_repeat_found=true
-            is_found=true
-        fi
-    fi
+	cleverf-match ${search_type} ${prev_cursor_pos}
 
-    if ! $is_repeat_found; then
-        zle .vi-find-next-char
-
-        if [[ $? -eq 0 ]]; then
-            is_found=true
-        fi
-    fi
-
-    if ! $is_found; then
+    if [[ $? -ne 0 ]]; then
         return
     fi
 
-    prev_pos=$((${#LBUFFER}+1))
+	# global
+	prev_cursor_pos=$(get-current-cursor-pos)
+
+	cleverf-highlight-all
+}
+
+cleverf-match() {
+	local search_type=$1
+	local tmp_prev_cursor_pos=$2
+
+	cleverf-repeat-match ${tmp_prev_cursor_pos}
+	if [ $? -eq 0 ]; then
+		return 0
+	fi
+
+	cleverf-vi-find ${search_type}
+	if [ $? -eq 0 ]; then
+		return 0
+	fi
+
+	return 1
+}
+
+cleverf-repeat-match() {
+	local tmp_prev_cursor_pos=$1
+    local current_pos=$(get-current-cursor-pos)
+
+    if [[ $tmp_prev_cursor_pos -eq $current_pos ]]; then
+        zle .vi-repeat-find 2> /dev/null
+
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+    fi
+
+	return 1
+}
+
+cleverf-vi-find() {
+	if [[ $1 -eq 1 ]]; then
+		zle .vi-find-next-char
+	elif [[ $1 -eq 2 ]]; then
+		zle .vi-find-prev-char
+	else
+		return 1
+	fi
+
+	if [[ $? -eq 0 ]]; then
+		return 0
+	fi
+
+	return 1
+}
+
+cleverf-highlight-all() {
     local cursor_position_char=${RBUFFER:0:1}
 
     # 1文字ずつ
     # echo で制御文字が消えるっぽい
-    buffer_len=$((`echo ${BUFFER} | wc -m`-1))
-    buffer_string=`echo ${BUFFER}`
+    local buffer_len=$((`echo ${BUFFER} | wc -m`-1))
+    local buffer_string=`echo ${BUFFER}`
 
     for index in {0..$buffer_len}; do
         local char=${buffer_string:${index}:1}
@@ -42,6 +83,18 @@ cleverf() {
             cleverf-highlight ${index}
         fi
     done
+}
+
+get-current-cursor-pos() {
+	echo $((${#LBUFFER}+1))
+}
+
+cleverf-next() {
+	cleverf 1
+}
+
+cleverf-prev() {
+	cleverf 2
 }
 
 cleverf-reset-prev-match() {
@@ -54,7 +107,11 @@ cleverf-highlight() {
     region_highlight+=("$1 $(($1+1)) bold,fg=red")
 }
 
+# 初期化
 cleverf-reset-prev-match
 
-zle -N cleverf
-bindkey "^N" cleverf
+zle -N cleverf-next
+bindkey "^N" cleverf-next
+
+zle -N cleverf-prev
+bindkey "^G" cleverf-prev
