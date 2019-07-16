@@ -15,7 +15,7 @@ cleverf() {
     fi
 
 	# global
-	prev_cursor_pos=$(get-current-cursor-pos)
+	prev_cursor_pos=${CURSOR}
 
 	cleverf-highlight-all
 }
@@ -39,15 +39,25 @@ cleverf-match() {
 
 cleverf-repeat-match() {
 	local tmp_prev_cursor_pos=$1
-    local current_pos=$(get-current-cursor-pos)
+	local current_cursor_pos=${CURSOR}
 
-    if [[ $tmp_prev_cursor_pos -eq $current_pos ]]; then
-        zle .vi-repeat-find 2> /dev/null
+    if [[ ${tmp_prev_cursor_pos} -eq ${current_cursor_pos} ]]; then
+		local cursor_pos=${current_cursor_pos}
 
-        if [[ $? -eq 0 ]]; then
-            return 0
-        fi
+		for line in ${RBUFFER}; do
+			echo $line
+			zle .vi-repeat-find 2> /dev/null
+
+			if [[ $? -eq 0 ]]; then
+				return 0
+			fi
+
+			CURSOR+=$(cleverf-get-length ${line})
+		done
     fi
+
+	# カーソル位置を戻して終了
+	CURSOR=${current_cursor_pos}
 
 	return 1
 }
@@ -73,8 +83,8 @@ cleverf-highlight-all() {
 
     # 1文字ずつ
     # echo で制御文字が消えるっぽい
-    local buffer_len=$((`echo ${BUFFER} | wc -m`-1))
-    local buffer_string=`echo ${BUFFER}`
+	local buffer_len=$(cleverf-get-length ${BUFFER})
+	local buffer_string=$(echo ${BUFFER})
 
     for index in {0..$buffer_len}; do
         local char=${buffer_string:${index}:1}
@@ -85,8 +95,8 @@ cleverf-highlight-all() {
     done
 }
 
-get-current-cursor-pos() {
-	echo $((${#LBUFFER}+1))
+cleverf-get-length() {
+	echo $(($(echo $1 | wc -m)-1))
 }
 
 cleverf-next() {
