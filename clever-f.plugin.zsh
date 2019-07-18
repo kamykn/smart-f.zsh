@@ -24,12 +24,12 @@ cleverf-match() {
 	local search_type=$1
 	local tmp_prev_cursor_pos=$2
 
-	cleverf-repeat-match ${tmp_prev_cursor_pos}
-	if [ $? -eq 0 ]; then
-		return 0
+	if [[ ${search_type} ]]; then
+		cleverf-vi-find-next ${tmp_prev_cursor_pos}
+	else 
+		# cleverf-vi-find-prev
 	fi
 
-	cleverf-vi-find ${search_type}
 	if [ $? -eq 0 ]; then
 		return 0
 	fi
@@ -37,43 +37,41 @@ cleverf-match() {
 	return 1
 }
 
-cleverf-repeat-match() {
+cleverf-vi-find-next() {
 	local tmp_prev_cursor_pos=$1
 	local current_cursor_pos=${CURSOR}
 
-    if [[ ${tmp_prev_cursor_pos} -eq ${current_cursor_pos} ]]; then
-		local cursor_pos=${current_cursor_pos}
+	if [[ ${tmp_prev_cursor_pos} -ne ${current_cursor_pos} ]]; then
+		zle vi-find-next-char
 
-		for line in ${RBUFFER}; do
-			echo $line
-			zle .vi-repeat-find 2> /dev/null
+		if [[ $? -eq 0 ]]; then
+			return 0
+		fi
+	fi
 
-			if [[ $? -eq 0 ]]; then
-				return 0
+	local is_current_line=true
+	for line in {1..$BUFFERLINES}; do
+		zle .vi-repeat-find
+
+		if [[ $? -eq 0 ]]; then
+			if ! "${is_current_line}"; then
+				# 次の行マッチの1文字目がヒットできないので戻す
+				zle .vi-rev-repeat-find
 			fi
 
-			CURSOR+=$(cleverf-get-length ${line})
-		done
-    fi
+			return 0
+		fi
 
-	# カーソル位置を戻して終了
-	CURSOR=${current_cursor_pos}
+		# 次のラインの先頭に移動する
+		# 次のラインに移動しない行末移動
+		zle .vi-end-of-line
+		# 次のラインに移動する行末移動
+		zle .end-of-line
+		# 前のラインに移動しない行頭移動
+		zle .vi-beginning-of-line
 
-	return 1
-}
-
-cleverf-vi-find() {
-	if [[ $1 -eq 1 ]]; then
-		zle .vi-find-next-char
-	elif [[ $1 -eq 2 ]]; then
-		zle .vi-find-prev-char
-	else
-		return 1
-	fi
-
-	if [[ $? -eq 0 ]]; then
-		return 0
-	fi
+		is_current_line=false
+	done
 
 	return 1
 }
