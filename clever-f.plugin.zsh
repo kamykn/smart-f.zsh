@@ -5,9 +5,6 @@ local search_type_mode=0
 cleverf() {
 	local search_type=$1
 
-	# vi-find-next-charでキャンセルされるよりも前に初期化しておく
-	cleverf-reset-highlight
-
 	if [[ ! -v prev_cursor_pos ]]; then
 		prev_cursor_pos=-1
 	fi
@@ -15,6 +12,10 @@ cleverf() {
 	cleverf-vi-find ${search_type} ${prev_cursor_pos}
 
 	if [[ $? -ne 0 ]]; then
+		if [[ $tmp_prev_cursor_pos = $CURSOR ]]; then
+			cleverf-reset-highlight
+		fi
+
 		return
 	fi
 
@@ -43,8 +44,27 @@ cleverf-vi-find() {
 		fi
 	fi
 
+	local current_line=$(echo "$LBUFFER" | wc -l | tr -d ' ')
 	local is_current_line=true
-	for line in {1..$BUFFERLINES}; do
+	local end_line=1
+	if [[ $search_type -eq $search_type_next ]]; then
+		end_line=${BUFFERLINES}
+	else
+		end_line=1
+	fi
+
+	for line in $(seq ${current_line} ${end_line}); do
+		# 行移動
+		if [[ line -ne $current_line ]]; then
+			if [[ $search_type -eq $search_type_next ]]; then
+				cleverf-move-next-line
+			else
+				cleverf-move-prev-line
+			fi
+
+			is_current_line=false
+		fi
+
 		# repeatマッチ
 		if [[ $search_type_mode -eq $search_type ]]; then
 			zle .vi-repeat-find
@@ -65,16 +85,10 @@ cleverf-vi-find() {
 
 			return 0
 		fi
-
-		# 行移動
-		if [[ $search_type -eq $search_type_next ]]; then
-			cleverf-move-next-line
-		else
-			cleverf-move-prev-line
-		fi
-
-		is_current_line=false
 	done
+
+	# 無かった場合にカーソル位置を戻す
+	CURSOR=current_cursor_pos
 
 	return 1
 }
