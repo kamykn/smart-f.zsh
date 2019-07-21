@@ -192,7 +192,11 @@ clever-f-highlight() {
 clever-f-reset-highlight
 
 zle -N clever-f-next
+zle -N clever-f-prev
+
+# for emacs mode
 bindkey "^X^F" clever-f-next
 
-zle -N clever-f-prev
-bindkey "^X^N" clever-f-prev
+# for vi mode
+bindkey -a 'f' clever-f-next
+bindkey -a 'F' clever-f-prev
