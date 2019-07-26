@@ -59,7 +59,8 @@ _clever_f_vi_find() {
     local -i search_type=$2
     local -i tmp_prev_cursor_pos=$3
 
-    if [[ ${tmp_prev_cursor_pos} -ne ${CURSOR} ]]; then
+    if [[ ${tmp_prev_cursor_pos} -ne ${CURSOR} || ${search_type} -ne ${clever_f_search_type} ]]; then
+		_clever_f_reset_highlight
         _clever_f_find ${search_direction} ${search_type}
 
         if [[ $? -eq 0 ]]; then
