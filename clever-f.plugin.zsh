@@ -1,18 +1,28 @@
+# Copyright (c) 2019 kamykn.
 
-if [[ ! -v SEARCH_TYPE_NEXT ]]; then
-    readonly SEARCH_TYPE_NEXT=1
+# Character search function extension plugin.
+
+if [[ ! -v CLEVER_F_SEARCH_TYPE_NEXT ]]; then
+    readonly -i CLEVER_F_SEARCH_TYPE_NEXT=1
 fi
 
-if [[ ! -v SEARCH_TYPE_PREV ]]; then
-    readonly SEARCH_TYPE_PREV=2
+if [[ ! -v CLEVER_F_SEARCH_TYPE_PREV ]]; then
+    readonly -i CLEVER_F_SEARCH_TYPE_PREV=2
 fi
 
-if [[ ! -v search_type_mode ]]; then
-	local search_type_mode=0
+# forward or backward mode
+if [[ ! -v clever_f_search_type_mode ]]; then
+	local -i clever_f_search_type_mode=0
+fi
+
+# t or f mode
+if [[ ! -v clever_f_is_f_search ]]; then
+	local -i clever_f_is_f_search=0
 fi
 
 _clever_f() {
     local -i search_type=$1
+    clever_f_is_f_search=$2
 
     if [[ ! -v prev_cursor_pos ]]; then
         prev_cursor_pos=-1
@@ -31,7 +41,7 @@ _clever_f() {
     # global
     prev_cursor_pos=${CURSOR}
 
-    _clever_f_highlight_all
+    _clever_f_highlight_all ${search_type}
 
     return 0
 }
@@ -61,14 +71,22 @@ _clever_f_vi_find() {
 _clever_f_find() {
     local -i search_type=$1
 
-    if [[ ${search_type} -eq ${SEARCH_TYPE_NEXT} ]]; then
-        zle .vi-find-next-char
+    if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_NEXT} ]]; then
+		if [[ ${clever_f_is_f_search} -eq 0 ]]; then
+			zle .vi-find-next-char
+		else
+			zle .vi-find-next-char-skip
+		fi
     else
-        zle .vi-find-prev-char
+		if [[ ${clever_f_is_f_search} -eq 0 ]]; then
+			zle .vi-find-prev-char
+		else
+			zle .vi-find-prev-char-skip
+		fi
     fi
 
     if [[ $? -eq 0 ]]; then
-        search_type_mode=${search_type}
+        clever_f_search_type_mode=${search_type}
         return 0
     fi
 
@@ -81,7 +99,7 @@ _clever_f_repeat_find_loop() {
     local -i current_line=$(echo "${LBUFFER}" | wc -l | tr -d ' ')
     local -i end_line=1
 
-    if [[ ${search_type} -eq ${SEARCH_TYPE_NEXT} ]]; then
+    if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_NEXT} ]]; then
         end_line=${BUFFERLINES}
     else
         end_line=1
@@ -111,16 +129,16 @@ _clever_f_repeat_find() {
 
     # move line
     if ! "${is_current_line}"; then
-        if [[ ${search_type} -eq ${SEARCH_TYPE_NEXT} ]]; then
+        if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_NEXT} ]]; then
             _clever_f_move_next_line
         else
             _clever_f_move_prev_line
         fi
     fi
 
-    if [[ ${search_type_mode} -eq ${search_type} ]]; then
+    if [[ ${clever_f_search_type_mode} -eq ${search_type} ]]; then
 		# for repeat
-        zle .vi-repeat-find
+		zle .vi-repeat-find
     else
         # for reverse repeat
         zle .vi-rev-repeat-find
@@ -129,7 +147,7 @@ _clever_f_repeat_find() {
     if [[ $? -eq 0 ]]; then
         if ! "${is_current_line}"; then
             # 次/前の行マッチの1文字目がヒットできないので戻す
-            if [[ ${search_type} -eq ${SEARCH_TYPE_NEXT} ]]; then
+            if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_NEXT} ]]; then
                 zle .vi-rev-repeat-find
             else
                 zle .vi-repeat-find
@@ -167,7 +185,8 @@ _clever_f_move_prev_line() {
 }
 
 _clever_f_highlight_all() {
-    local cursor_position_char=${RBUFFER:0:1}
+    local -i search_type=$1
+	local cursor_position_char=$(_clever_f_find_char ${search_type})
 
     # 1文字ずつ
     # echo で制御文字が消えるっぽい
@@ -183,6 +202,28 @@ _clever_f_highlight_all() {
     done
 
     return 0
+}
+
+_clever_f_find_char() {
+    local -i search_type=$1
+	local -i cursor_position_char_index=0
+	local buffer_for_find=$RBUFFER
+
+    if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_NEXT} ]]; then
+		if [[ ${clever_f_is_f_search} -ne 0 ]]; then
+			cursor_position_char_index=1
+		fi
+	else
+		if [[ ${clever_f_is_f_search} -ne 0 ]]; then
+			buffer_for_find=$LBUFFER
+			cursor_position_char_index=$(($(_clever_f_get_length ${LBUFFER})-1))
+		fi
+	fi
+
+	local cursor_position_char=${buffer_for_find:${cursor_position_char_index}:1}
+
+	echo $cursor_position_char
+	return 0
 }
 
 _clever_f_get_length() {
@@ -201,12 +242,22 @@ _clever_f_reset_highlight() {
 }
 
 clever_f_next() {
-    _clever_f ${SEARCH_TYPE_NEXT}
+    _clever_f ${CLEVER_F_SEARCH_TYPE_NEXT} 0
     return 0
 }
 
 clever_f_prev() {
-    _clever_f ${SEARCH_TYPE_PREV}
+    _clever_f ${CLEVER_F_SEARCH_TYPE_PREV} 0
+    return 0
+}
+
+clever_f_next_skip() {
+    _clever_f ${CLEVER_F_SEARCH_TYPE_NEXT} 1
+    return 0
+}
+
+clever_f_prev_skip() {
+    _clever_f ${CLEVER_F_SEARCH_TYPE_PREV} 1
     return 0
 }
 
@@ -236,6 +287,8 @@ _clever_f_bind_reset_highlight
 
 zle -N clever_f_next
 zle -N clever_f_prev
+zle -N clever_f_next_skip
+zle -N clever_f_prev_skip
 
 # for emacs mode
 bindkey "^X^F" clever_f_next
@@ -243,3 +296,5 @@ bindkey "^X^F" clever_f_next
 # for vi mode
 bindkey -a 'f' clever_f_next
 bindkey -a 'F' clever_f_prev
+bindkey -a 't' clever_f_next_skip
+bindkey -a 'T' clever_f_prev_skip
