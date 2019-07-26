@@ -12,7 +12,7 @@ fi
 
 # forward or backward mode
 if [[ ! -v clever_f_search_direction ]]; then
-	local -i clever_f_search_direction=0
+    local -i clever_f_search_direction=0
 fi
 
 if [[ ! -v CLEVER_F_SEARCH_TYPE_F ]]; then
@@ -25,7 +25,7 @@ fi
 
 # t or f mode
 if [[ ! -v clever_f_search_type ]]; then
-	local -i clever_f_search_type=0
+    local -i clever_f_search_type=0
 fi
 
 _clever_f() {
@@ -60,7 +60,7 @@ _clever_f_vi_find() {
     local -i tmp_prev_cursor_pos=$3
 
     if [[ ${tmp_prev_cursor_pos} -ne ${CURSOR} || ${search_type} -ne ${clever_f_search_type} ]]; then
-		_clever_f_reset_highlight
+        _clever_f_reset_highlight
         _clever_f_find ${search_direction} ${search_type}
 
         if [[ $? -eq 0 ]]; then
@@ -82,22 +82,22 @@ _clever_f_find() {
     local -i search_type=$2
 
     if [[ ${search_direction} -eq ${CLEVER_F_SEARCH_FORWARD} ]]; then
-		if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_F} ]]; then
-			zle .vi-find-next-char
-		else
-			zle .vi-find-next-char-skip
-		fi
+        if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_F} ]]; then
+            zle .vi-find-next-char
+        else
+            zle .vi-find-next-char-skip
+        fi
     else
-		if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_F} ]]; then
-			zle .vi-find-prev-char
-		else
-			zle .vi-find-prev-char-skip
-		fi
+        if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_F} ]]; then
+            zle .vi-find-prev-char
+        else
+            zle .vi-find-prev-char-skip
+        fi
     fi
 
     if [[ $? -eq 0 ]]; then
         clever_f_search_direction=${search_direction}
-		clever_f_search_type=${search_type}
+        clever_f_search_type=${search_type}
         return 0
     fi
 
@@ -148,8 +148,8 @@ _clever_f_repeat_find() {
     fi
 
     if [[ ${clever_f_search_direction} -eq ${search_direction} ]]; then
-		# for repeat
-		zle .vi-repeat-find
+        # for repeat
+        zle .vi-repeat-find
     else
         # for reverse repeat
         zle .vi-rev-repeat-find
@@ -198,7 +198,7 @@ _clever_f_move_prev_line() {
 _clever_f_highlight_all() {
     local -i search_direction=$1
     local -i search_type=$2
-	local cursor_position_char=$(_clever_f_find_char ${search_direction} ${search_type})
+    local cursor_position_char=$(_clever_f_find_char ${search_direction} ${search_type})
 
     # 1文字ずつ
     # echo で制御文字が消えるっぽい
@@ -219,24 +219,24 @@ _clever_f_highlight_all() {
 _clever_f_find_char() {
     local -i search_direction=$1
     local -i search_type=$2
-	local -i cursor_position_char_index=0
-	local buffer_for_find=$RBUFFER
+    local -i cursor_position_char_index=0
+    local buffer_for_find=$RBUFFER
 
     if [[ ${search_direction} -eq ${CLEVER_F_SEARCH_FORWARD} ]]; then
-		if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_T} ]]; then
-			cursor_position_char_index=1
-		fi
-	else
-		if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_T} ]]; then
-			buffer_for_find=$LBUFFER
-			cursor_position_char_index=$(($(_clever_f_get_length ${LBUFFER})-1))
-		fi
-	fi
+        if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_T} ]]; then
+            cursor_position_char_index=1
+        fi
+    else
+        if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_T} ]]; then
+            buffer_for_find=$LBUFFER
+            cursor_position_char_index=$(($(_clever_f_get_length ${LBUFFER})-1))
+        fi
+    fi
 
-	local cursor_position_char=${buffer_for_find:${cursor_position_char_index}:1}
+    local cursor_position_char=${buffer_for_find:${cursor_position_char_index}:1}
 
-	echo $cursor_position_char
-	return 0
+    echo $cursor_position_char
+    return 0
 }
 
 _clever_f_get_length() {
@@ -275,20 +275,20 @@ clever_f_prev_skip() {
 }
 
 _clever_f_bind_reset_highlight() {
-	local -U widgets_to_bind
-	widgets_to_bind=(${${(k)widgets}:#(.*|run-help|which-command|beep|set-local-history|yank|yank-pop)})
+    local -U widgets_to_bind
+    widgets_to_bind=(${${(k)widgets}:#(.*|run-help|which-command|beep|set-local-history|yank|yank-pop)})
 
-	for cur_widget in $widgets_to_bind; do
-		case ${widgets[$cur_widget]:-""} in
-			builtin)
-				eval "_clever_f_call_widget_$cur_widget() {
-					builtin zle .$cur_widget
-					_clever_f_reset_highlight
-				}"
+    for cur_widget in $widgets_to_bind; do
+        case ${widgets[$cur_widget]:-""} in
+            builtin)
+                eval "_clever_f_call_widget_$cur_widget() {
+                    builtin zle .$cur_widget
+                    _clever_f_reset_highlight
+                }"
 
-				zle -N $cur_widget _clever_f_call_widget_$cur_widget
-		esac
-	done
+            zle -N $cur_widget _clever_f_call_widget_$cur_widget
+        esac
+    done
 }
 
 
