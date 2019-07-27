@@ -112,9 +112,9 @@ _clever_f_repeat_find_loop() {
 
     if [[ ${search_direction} -eq ${CLEVER_F_SEARCH_FORWARD} ]]; then
         end_line=${BUFFERLINES}
-    else
-        end_line=1
     fi
+
+    current_cursor_pos=${CURSOR}
 
     local is_current_line=true
     for line in $(seq ${current_line} ${end_line}); do
