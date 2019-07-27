@@ -123,6 +123,7 @@ _clever_f_repeat_find_loop() {
         fi
 
         _clever_f_repeat_find ${search_direction} ${is_current_line}
+
         if [[ $? -eq 0 ]]; then
             return 0
         fi
@@ -196,6 +197,8 @@ _clever_f_move_prev_line() {
 }
 
 _clever_f_highlight_all() {
+    _clever_f_reset_highlight
+
     local -i search_direction=$1
     local -i search_type=$2
     local cursor_position_char=$(_clever_f_find_char ${search_direction} ${search_type})
@@ -205,11 +208,32 @@ _clever_f_highlight_all() {
     local -i buffer_len=$(_clever_f_get_length ${BUFFER})
     local buffer_string=$(echo ${BUFFER})
 
-    for index in {0..${buffer_len}}; do
+    if [[ $search_direction -eq ${CLEVER_F_SEARCH_FORWARD} ]]; then
+        loop_start=${buffer_len}
+        loop_end=0
+    else
+        loop_start=0
+        loop_end=${buffer_len}
+    fi
+
+    local is_find=false
+    for index in $(seq ${loop_start} ${loop_end}); do
         local char=${buffer_string:${index}:1}
+        local is_find_prev=$is_find
+        is_find=false
 
         if [[ ${char} = ${cursor_position_char} ]]; then
-            _clever_f_highlight ${index}
+            if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_F} ]];then
+                _clever_f_highlight ${index}
+            fi
+
+            is_find=true
+        fi
+
+        if "${is_find_prev}"; then
+            if [[ ${search_type} -eq ${CLEVER_F_SEARCH_TYPE_T} ]];then
+                _clever_f_highlight ${index}
+            fi
         fi
     done
 
