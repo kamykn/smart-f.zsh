@@ -174,24 +174,26 @@ _clever_f_repeat_find() {
 
 # 次のラインの行頭に移動する
 _clever_f_move_next_line() {
+    # 複数行移動する場合にはwidgetの先頭に.をつけると移動できない
     # 次のラインに移動しない行末移動
-    zle .vi-end-of-line
+    zle vi-end-of-line
     # 次のラインに移動する行末移動
-    zle .end-of-line
+    zle end-of-line
     # 前のラインに移動しない行頭移動
-    zle .vi-beginning-of-line
+    zle vi-beginning-of-line
 
     return 0
 }
 
 # 前のラインの行末に移動する
 _clever_f_move_prev_line() {
+    # 複数行移動する場合にはwidgetの先頭に.をつけると移動できない
     # 前のラインに移動しない行頭移動
-    zle .vi-beginning-of-line
+    zle vi-beginning-of-line
     # 前のラインに移動する行頭移動
-    zle .beginning-of-line
+    zle beginning-of-line
     # 次のラインに移動しない行末移動
-    zle .vi-end-of-line
+    zle vi-end-of-line
 
     return 0
 }
