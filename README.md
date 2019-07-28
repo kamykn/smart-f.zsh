@@ -1,8 +1,9 @@
 # smart-f.zsh⛵️
-Extended vi-mode f, F, t, and T key mapping for zsh.  
-smart-f.zsh is a zsh plugin inspired by [clever-f.vim](https://github.com/rhysd/clever-f.vim)
+Extended Vi mode f, F, t, and T key mapping for zsh.  
+Read a character from the keyboard, and move to the next (or prev) occurrence of it in the BUFFER.  
+smart-f.zsh is a zsh plugin inspired by [clever-f.vim](https://github.com/rhysd/clever-f.vim).
 
-## demo
+## Demo
 
 ## Installation
 ### zplug
@@ -11,32 +12,40 @@ smart-f.zsh is a zsh plugin inspired by [clever-f.vim](https://github.com/rhysd/
 zplug "zsh-users/zsh-completions"
 ```
 
-## How to use
-デフォルトのコマンドを上書きしています
-
-find next char
+## Usage
+### f (Emacs mode)
+Finding character and move to the next in the BUFFER (for [Emacs mode](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html)).
 
 ```
+# This is overriding default Emacs mode command
 Ctrl-X Ctrl-F {char}
 ```
 
-emacs modeではfind next charだけしか無いですが、vi-modeではf, F, t, Tも実装されています
+### f, F, t and T (Vi mode)
+In vi mode `f`,` F`, `t` and` T` are overridden (for [Vi mode](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html)).
 
-find prev char
 ```
-# normal mode
+# (for normal mode)
+# Finding character and move to the next.
 f {char}
+
+# Finding character and move to the previous.
 F {char}
+
+# Finding character and move to the position just before the next.
 t {char}
+
+# Finding character and move to the position just before the previous.
 T {char}
 ```
 
 ## Remapping
-i recommended to remap key
+I recommended to remap key
 
 ```
-bindkey '^f' clever_f_next
-bindkey '^F' clever_f_prev
+bindkey '^F' smart_f_next
+bindkey '^[f' smart_f_prev
 ```
 
+mac terminal の場合は メタキーとしてOptionを利用にチェックを
 
