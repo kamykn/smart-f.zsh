@@ -4,6 +4,7 @@ Read a character from the keyboard, and move to the next (or prev) occurrence of
 smart-f.zsh is a zsh plugin inspired by [clever-f.vim](https://github.com/rhysd/clever-f.vim).
 
 ## Demo
+![smart-f.zsh](https://raw.githubusercontent.com/kamykn/smart-f.zsh/master/img/remap.gif)
 
 ## Installation
 ### zplug
@@ -16,6 +17,8 @@ zplug "zsh-users/zsh-completions"
 ### f (Emacs mode)
 Finding character and move to the next in the BUFFER (for [Emacs mode](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html)).
 
+![smart-f.zsh emacs-mode](https://raw.githubusercontent.com/kamykn/smart-f.zsh/master/img/emacs-mode.gif)
+
 ```
 # This is overriding default Emacs mode command
 Ctrl-X Ctrl-F {char}
@@ -24,8 +27,10 @@ Ctrl-X Ctrl-F {char}
 ### f, F, t and T (Vi mode)
 In vi mode `f`,` F`, `t` and` T` are overridden (for [Vi mode](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html)).
 
+![smart-f.zsh vi-mode](https://raw.githubusercontent.com/kamykn/smart-f.zsh/master/img/vi-mode-normal.gif)
+
 ```
-# (for normal mode)
+# For normal mode (vicmd).
 # Finding character and move to the next.
 f {char}
 
