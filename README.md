@@ -40,12 +40,13 @@ T {char}
 ```
 
 ## Remapping
-I recommended to remap key
+You can remap shortcut key.
 
 ```
+# Finding character and move to the next.
 bindkey '^F' smart_f_next
-bindkey '^[f' smart_f_prev
-```
 
-mac terminal の場合は メタキーとしてOptionを利用にチェックを
+# Finding character and move to the previous.
+bindkey '^B' smart_f_prev
+```
 
