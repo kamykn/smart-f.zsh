@@ -10,7 +10,7 @@ smart-f.zsh is a zsh plugin inspired by [clever-f.vim](https://github.com/rhysd/
 ### zplug
 
 ```
-zplug "zsh-users/zsh-completions"
+zplug "kamykn/smart-f.zsh", defer:2
 ```
 
 ## Usage
