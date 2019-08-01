@@ -2,31 +2,35 @@
 
 # Character search function extension plugin.
 
-if [[ ! -v SMART_F_SEARCH_FORWARD ]]; then
-    readonly -i SMART_F_SEARCH_FORWARD=1
-fi
+_smart_f_set_global() {
+    if [[ ! -v SMART_F_SEARCH_FORWARD ]]; then
+        SMART_F_SEARCH_FORWARD=1
+    fi
 
-if [[ ! -v SMART_F_SEARCH_BACKWARD ]]; then
-    readonly -i SMART_F_SEARCH_BACKWARD=2
-fi
+    if [[ ! -v SMART_F_SEARCH_BACKWARD ]]; then
+        SMART_F_SEARCH_BACKWARD=2
+    fi
 
-# forward or backward mode
-if [[ ! -v smart_f_search_direction ]]; then
-    local -i smart_f_search_direction=0
-fi
+    # forward or backward mode
+    if [[ ! -v smart_f_search_direction ]]; then
+        smart_f_search_direction=0
+    fi
 
-if [[ ! -v SMART_F_SEARCH_TYPE_F ]]; then
-    readonly -i SMART_F_SEARCH_TYPE_F=1
-fi
+    if [[ ! -v SMART_F_SEARCH_TYPE_F ]]; then
+        SMART_F_SEARCH_TYPE_F=1
+    fi
 
-if [[ ! -v SMART_F_SEARCH_TYPE_T ]]; then
-    readonly -i SMART_F_SEARCH_TYPE_T=2
-fi
+    if [[ ! -v SMART_F_SEARCH_TYPE_T ]]; then
+        SMART_F_SEARCH_TYPE_T=2
+    fi
 
-# t or f mode
-if [[ ! -v smart_f_search_type ]]; then
-    local -i smart_f_search_type=0
-fi
+    # t or f mode
+    if [[ ! -v smart_f_search_type ]]; then
+        smart_f_search_type=0
+    fi
+
+    return 0
+}
 
 _smart_f() {
     local -i search_direction=$1
@@ -202,6 +206,7 @@ _smart_f_highlight_all() {
 
     local -i search_direction=$1
     local -i search_type=$2
+
     local cursor_position_char=$(_smart_f_find_char ${search_direction} ${search_type})
 
     # 1文字ずつ
@@ -280,21 +285,25 @@ _smart_f_reset_highlight() {
 }
 
 smart_f_next() {
+    _smart_f_set_global
     _smart_f ${SMART_F_SEARCH_FORWARD} ${SMART_F_SEARCH_TYPE_F}
     return 0
 }
 
 smart_f_prev() {
+    _smart_f_set_global
     _smart_f ${SMART_F_SEARCH_BACKWARD} ${SMART_F_SEARCH_TYPE_F}
     return 0
 }
 
 smart_f_next_skip() {
+    _smart_f_set_global
     _smart_f ${SMART_F_SEARCH_FORWARD} ${SMART_F_SEARCH_TYPE_T}
     return 0
 }
 
 smart_f_prev_skip() {
+    _smart_f_set_global
     _smart_f ${SMART_F_SEARCH_BACKWARD} ${SMART_F_SEARCH_TYPE_T}
     return 0
 }
