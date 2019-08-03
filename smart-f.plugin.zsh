@@ -43,10 +43,6 @@ _smart_f() {
     _smart_f_vi_find ${search_direction} ${search_type} ${prev_cursor_pos}
 
     if [[ $? -ne 0 ]]; then
-        if [[ ${tmp_prev_cursor_pos} = ${CURSOR} ]]; then
-            _smart_f_reset_highlight
-        fi
-
         return 1
     fi
 
@@ -114,7 +110,7 @@ _smart_f_repeat_find_loop() {
     local -i end_line=1
 
     if [[ ${search_direction} -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-        end_line=${BUFFERLINES}
+        end_line=$(_smart_f_get_num_of_lines ${BUFFER})
     fi
 
     current_cursor_pos=${CURSOR}
@@ -271,6 +267,11 @@ _smart_f_find_char() {
 
 _smart_f_get_length() {
     echo $(($(echo $1 | wc -m)-1))
+    return 0
+}
+
+_smart_f_get_num_of_lines() {
+    echo $(echo $1 | wc -l)
     return 0
 }
 
