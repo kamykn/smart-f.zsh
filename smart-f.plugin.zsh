@@ -12,8 +12,8 @@ _smart_f_set_global() {
     fi
 
     # forward or backward mode
-    if [[ ! -v smart_f_search_direction ]]; then
-        smart_f_search_direction=0
+    if [[ ! -v Smart_f_search_direction ]]; then
+        Smart_f_search_direction=0
     fi
 
     if [[ ! -v SMART_F_SEARCH_TYPE_F ]]; then
@@ -25,8 +25,13 @@ _smart_f_set_global() {
     fi
 
     # t or f mode
-    if [[ ! -v smart_f_search_type ]]; then
-        smart_f_search_type=0
+    if [[ ! -v Smart_f_search_type ]]; then
+        Smart_f_search_type=0
+    fi
+
+    # highlight setting
+    if [[ ! -v Smart_f_region_highlight_setting ]]; then
+		Smart_f_region_highlight_setting=()
     fi
 
     return 0
@@ -35,34 +40,19 @@ _smart_f_set_global() {
 _smart_f() {
     local -i search_direction=$1
     local -i search_type=$2
+    local is_match=false
 
-    if [[ ! -v prev_cursor_pos ]]; then
-        prev_cursor_pos=-1
+    if [[ ! -v Prev_cursor_pos ]]; then
+        Prev_cursor_pos=-1
     fi
 
-    _smart_f_vi_find ${search_direction} ${search_type} ${prev_cursor_pos}
-
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    # global
-    prev_cursor_pos=${CURSOR}
-
-    _smart_f_highlight_all ${search_direction} ${search_type}
-
-    return 0
-}
-
-_smart_f_vi_find() {
-    local -i search_direction=$1
-    local -i search_type=$2
-    local -i tmp_prev_cursor_pos=$3
-
-    if [[ ${tmp_prev_cursor_pos} -ne ${CURSOR} || ${search_type} -ne ${smart_f_search_type} ]]; then
+    # _smart_f_vi_find ${search_direction} ${search_type} ${Prev_cursor_pos}
+    if [[ ${Prev_cursor_pos} -ne ${CURSOR} || ${search_type} -ne ${Smart_f_search_type} ]]; then
         _smart_f_find ${search_direction} ${search_type}
 
         if [[ $? -eq 0 ]]; then
+            Prev_cursor_pos=${CURSOR}
+            _smart_f_highlight_all ${search_direction} ${search_type}
             return 0
         fi
     fi
@@ -70,10 +60,10 @@ _smart_f_vi_find() {
     _smart_f_repeat_find_loop ${search_direction}
 
     if [[ $? -eq 0 ]]; then
-        return 0
+        Prev_cursor_pos=${CURSOR}
     fi
 
-    return 1
+    return 0
 }
 
 _smart_f_find() {
@@ -95,8 +85,8 @@ _smart_f_find() {
     fi
 
     if [[ $? -eq 0 ]]; then
-        smart_f_search_direction=${search_direction}
-        smart_f_search_type=${search_type}
+        Smart_f_search_direction=${search_direction}
+        Smart_f_search_type=${search_type}
         return 0
     fi
 
@@ -147,7 +137,7 @@ _smart_f_repeat_find() {
         fi
     fi
 
-    if [[ ${smart_f_search_direction} -eq ${search_direction} ]]; then
+    if [[ ${Smart_f_search_direction} -eq ${search_direction} ]]; then
         # for repeat
         zle .vi-repeat-find
     else
@@ -198,8 +188,6 @@ _smart_f_move_prev_line() {
 }
 
 _smart_f_highlight_all() {
-    _smart_f_reset_highlight
-
     local -i search_direction=$1
     local -i search_type=$2
 
@@ -217,6 +205,8 @@ _smart_f_highlight_all() {
         loop_start=0
         loop_end=${buffer_len}
     fi
+
+    _smart_f_store_highlight_setting
 
     local is_find=false
     for index in $(seq ${loop_start} ${loop_end}); do
@@ -275,6 +265,11 @@ _smart_f_get_num_of_lines() {
     return 0
 }
 
+_smart_f_store_highlight_setting() {
+    Smart_f_region_highlight_setting=$region_highlight
+    return 0
+}
+
 _smart_f_highlight() {
     region_highlight+=("$1 $(($1+1)) bold,fg=red")
     return 0
@@ -282,6 +277,11 @@ _smart_f_highlight() {
 
 _smart_f_reset_highlight() {
     region_highlight=()
+
+    for highlight_setting in $Smart_f_region_highlight_setting; do
+        region_highlight+=$highlight_setting
+    done
+
     return 0
 }
 
@@ -326,6 +326,12 @@ _smart_f_bind_reset_highlight() {
     done
 }
 
+# __smart_f_hl_debug() {
+#     region_highlight+=("1 2 bold,fg=blue")
+# }
+#
+# zle -N __smart_f_hl_debug
+# bindkey "^E" __smart_f_hl_debug
 
 # initialization
 _smart_f_reset_highlight
