@@ -70,27 +70,51 @@ _smart_f_find() {
     local -i search_direction=$1
     local -i search_type=$2
 
-    if [[ ${search_direction} -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-        if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_F} ]]; then
-            zle .vi-find-next-char
-        else
-            zle .vi-find-next-char-skip
-        fi
-    else
-        if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_F} ]]; then
-            zle .vi-find-prev-char
-        else
-            zle .vi-find-prev-char-skip
-        fi
-    fi
+    read -k1 find_char
+    local buffer_string=$(echo ${BUFFER})
 
-    if [[ $? -eq 0 ]]; then
-        Smart_f_search_direction=${search_direction}
-        Smart_f_search_type=${search_type}
-        return 0
-    fi
+    for index in $(_get_buffer_index_range $search_direction); do
+        local char=${buffer_string:${index}:1}
+
+        if [[ ${char} = ${find_char} ]]; then
+            if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_F} ]];then
+                cursor_pos=$index
+            else
+                if [[ ${search_direction} -eq ${SMART_F_SEARCH_FORWARD} ]]; then
+                    cursor_pos=$(($index-1))
+                else
+                    cursor_pos=$(($index+1))
+                fi
+            fi
+
+            CURSOR=${cursor_pos}
+
+            Smart_f_search_direction=${search_direction}
+            Smart_f_search_type=${search_type}
+
+            return 0
+        fi
+    done
 
     return 1
+}
+
+_get_buffer_index_range() {
+    local -i search_direction=$1
+
+    # 1文字ずつ
+    # echo で制御文字が消えるっぽい
+    local -i buffer_len=$(_smart_f_get_length ${BUFFER})
+
+    if [[ $search_direction -eq ${SMART_F_SEARCH_FORWARD} ]]; then
+        loop_start=0
+        loop_end=${buffer_len}
+    else
+        loop_start=${buffer_len}
+        loop_end=0
+    fi
+
+    echo $(seq ${loop_start} ${loop_end})
 }
 
 _smart_f_repeat_find_loop() {
