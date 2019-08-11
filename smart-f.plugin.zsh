@@ -3,17 +3,13 @@
 # Character search function extension plugin.
 
 _smart_f_set_global() {
+    # Constant
     if [[ ! -v SMART_F_SEARCH_FORWARD ]]; then
         SMART_F_SEARCH_FORWARD=1
     fi
 
     if [[ ! -v SMART_F_SEARCH_BACKWARD ]]; then
         SMART_F_SEARCH_BACKWARD=2
-    fi
-
-    # forward or backward mode
-    if [[ ! -v Smart_f_search_direction ]]; then
-        Smart_f_search_direction=0
     fi
 
     if [[ ! -v SMART_F_SEARCH_TYPE_F ]]; then
@@ -24,14 +20,29 @@ _smart_f_set_global() {
         SMART_F_SEARCH_TYPE_T=2
     fi
 
-    # t or f mode
-    if [[ ! -v Smart_f_search_type ]]; then
-        Smart_f_search_type=0
-    fi
-
+    # Global
     # highlight setting
     if [[ ! -v Smart_f_region_highlight_setting ]]; then
 		Smart_f_region_highlight_setting=()
+    fi
+
+    # forward or backward mode
+    if [[ ! -v Smart_f_search_direction ]]; then
+        Smart_f_search_direction=0
+    fi
+
+    # t or f mode
+    if [[ ! -v Smart_f_current_search_type ]]; then
+        Smart_f_current_search_type=0
+    fi
+
+	# current search character
+    if [[ ! -v Smart_f_current_char ]]; then
+        Smart_f_current_char=''
+    fi
+
+    if [[ ! -v Smart_f_is_repeat ]]; then
+        Smart_f_is_repeat=false
     fi
 
     return 0
@@ -40,24 +51,19 @@ _smart_f_set_global() {
 _smart_f() {
     local -i search_direction=$1
     local -i search_type=$2
-    local is_match=false
 
     if [[ ! -v Prev_cursor_pos ]]; then
         Prev_cursor_pos=-1
     fi
 
-    # _smart_f_vi_find ${search_direction} ${search_type} ${Prev_cursor_pos}
-    if [[ ${Prev_cursor_pos} -ne ${CURSOR} || ${search_type} -ne ${Smart_f_search_type} ]]; then
-        _smart_f_find ${search_direction} ${search_type}
+    _smart_f_find ${search_direction} ${search_type} ${Smart_f_is_repeat}
 
-        if [[ $? -eq 0 ]]; then
-            Prev_cursor_pos=${CURSOR}
-            _smart_f_highlight_all ${search_direction} ${search_type}
-            return 0
-        fi
+    if [[ $? -eq 0 ]]; then
+        Prev_cursor_pos=${CURSOR}
+        _smart_f_highlight_all ${search_direction} ${search_type}
+        Smart_f_is_repeat=true
+        return 0
     fi
-
-    _smart_f_repeat_find_loop ${search_direction}
 
     if [[ $? -eq 0 ]]; then
         Prev_cursor_pos=${CURSOR}
@@ -69,14 +75,18 @@ _smart_f() {
 _smart_f_find() {
     local -i search_direction=$1
     local -i search_type=$2
+    local is_repeat=$3
 
-    read -k1 find_char
+    if ! "${is_repeat}"; then
+        read -k1 Smart_f_current_char
+    fi
+
     local buffer_string=$(echo ${BUFFER})
 
-    for index in $(_get_buffer_index_range $search_direction); do
+    for index in $(_get_buffer_index_range ${search_direction} ${is_repeat}); do
         local char=${buffer_string:${index}:1}
 
-        if [[ ${char} = ${find_char} ]]; then
+        if [[ ${char} = ${Smart_f_current_char} ]]; then
             if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_F} ]];then
                 cursor_pos=$index
             else
@@ -90,7 +100,7 @@ _smart_f_find() {
             CURSOR=${cursor_pos}
 
             Smart_f_search_direction=${search_direction}
-            Smart_f_search_type=${search_type}
+            Smart_f_current_search_type=${search_type}
 
             return 0
         fi
@@ -101,51 +111,31 @@ _smart_f_find() {
 
 _get_buffer_index_range() {
     local -i search_direction=$1
+    local is_repeat=$2
 
     # 1文字ずつ
     # echo で制御文字が消えるっぽい
     local -i buffer_len=$(_smart_f_get_length ${BUFFER})
 
     if [[ $search_direction -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-        loop_start=0
+        if "${is_repeat}"; then
+            loop_start=$((${CURSOR}+1))
+        else
+            loop_start=0
+        fi
+
         loop_end=${buffer_len}
     else
-        loop_start=${buffer_len}
+        if "${is_repeat}"; then
+            loop_start=$((${CURSOR}-1))
+        else
+            loop_start=${buffer_len}
+        fi
+
         loop_end=0
     fi
 
     echo $(seq ${loop_start} ${loop_end})
-}
-
-_smart_f_repeat_find_loop() {
-    local -i search_direction=$1
-
-    local -i current_line=$(echo "${LBUFFER}" | wc -l | tr -d ' ')
-    local -i end_line=1
-
-    if [[ ${search_direction} -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-        end_line=$(_smart_f_get_num_of_lines ${BUFFER})
-    fi
-
-    current_cursor_pos=${CURSOR}
-
-    local is_current_line=true
-    for line in $(seq ${current_line} ${end_line}); do
-        if [[ line -ne $current_line ]]; then
-            is_current_line=false
-        fi
-
-        _smart_f_repeat_find ${search_direction} ${is_current_line}
-
-        if [[ $? -eq 0 ]]; then
-            return 0
-        fi
-    done
-
-    # reset cursor position
-    CURSOR=${current_cursor_pos}
-
-    return 1
 }
 
 _smart_f_repeat_find() {
@@ -305,6 +295,8 @@ _smart_f_reset_highlight() {
     for highlight_setting in $Smart_f_region_highlight_setting; do
         region_highlight+=$highlight_setting
     done
+
+    Smart_f_is_repeat=false
 
     return 0
 }
