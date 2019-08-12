@@ -60,13 +60,13 @@ _smart_f() {
 
     if [[ $? -eq 0 ]]; then
         Prev_cursor_pos=${CURSOR}
-        _smart_f_highlight_all ${search_direction} ${search_type}
+
+        if ! "${Smart_f_is_repeat}"; then
+            _smart_f_highlight_all ${search_direction} ${search_type}
+        fi
+
         Smart_f_is_repeat=true
         return 0
-    fi
-
-    if [[ $? -eq 0 ]]; then
-        Prev_cursor_pos=${CURSOR}
     fi
 
     return 0
@@ -136,43 +136,6 @@ _get_buffer_index_range() {
     fi
 
     echo $(seq ${loop_start} ${loop_end})
-}
-
-_smart_f_repeat_find() {
-    local -i search_direction=$1
-    local is_current_line=$2
-
-    # move line
-    if ! "${is_current_line}"; then
-        if [[ ${search_direction} -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-            _smart_f_move_next_line
-        else
-            _smart_f_move_prev_line
-        fi
-    fi
-
-    if [[ ${Smart_f_search_direction} -eq ${search_direction} ]]; then
-        # for repeat
-        zle .vi-repeat-find
-    else
-        # for reverse repeat
-        zle .vi-rev-repeat-find
-    fi
-
-    if [[ $? -eq 0 ]]; then
-        if ! "${is_current_line}"; then
-            # 次/前の行マッチの1文字目がヒットできないので戻す
-            if [[ ${search_direction} -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-                zle .vi-rev-repeat-find
-            else
-                zle .vi-repeat-find
-            fi
-        fi
-
-        return 0
-    fi
-
-    return 1
 }
 
 # 次のラインの行頭に移動する
