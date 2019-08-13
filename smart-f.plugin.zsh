@@ -45,6 +45,11 @@ _smart_f_set_global() {
         Smart_f_is_repeat=false
     fi
 
+    # smart case
+    if [[ ! -v Smart_f_enable_smart_case ]]; then
+        Smart_f_enable_smart_case=false
+    fi
+
     return 0
 }
 
@@ -83,8 +88,12 @@ _smart_f_find() {
 
     local buffer_string=$(echo ${BUFFER})
 
-    for index in $(_get_buffer_index_range ${search_direction} ${is_repeat}); do
+    for index in $(_smart_f_get_buffer_index_range ${search_direction} ${is_repeat}); do
         local char=${buffer_string:${index}:1}
+
+        if "${Smart_f_enable_smart_case}"; then
+            char=$(_smart_f_smart_case ${char})
+        fi
 
         if [[ ${char} = ${Smart_f_current_char} ]]; then
             if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_F} ]];then
@@ -109,7 +118,17 @@ _smart_f_find() {
     return 1
 }
 
-_get_buffer_index_range() {
+_smart_f_smart_case() {
+    local char=$1
+
+    if [[ ${Smart_f_current_char} =~ [a-z] ]] && [[ ${char} =~ [A-Z] ]]; then
+        char=$(tr '[A-Z]' '[a-z]' <<< ${char})
+    fi
+
+    echo $char
+}
+
+_smart_f_get_buffer_index_range() {
     local -i search_direction=$1
     local is_repeat=$2
 
@@ -168,8 +187,6 @@ _smart_f_highlight_all() {
     local -i search_direction=$1
     local -i search_type=$2
 
-    local cursor_position_char=$(_smart_f_find_char ${search_direction} ${search_type})
-
     # 1文字ずつ
     # echo で制御文字が消えるっぽい
     local -i buffer_len=$(_smart_f_get_length ${BUFFER})
@@ -191,7 +208,11 @@ _smart_f_highlight_all() {
         local is_find_prev=$is_find
         is_find=false
 
-        if [[ ${char} = ${cursor_position_char} ]]; then
+        if "${Smart_f_enable_smart_case}"; then
+            char=$(_smart_f_smart_case ${char})
+        fi
+
+        if [[ ${char} = ${Smart_f_current_char} ]]; then
             if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_F} ]];then
                 _smart_f_highlight ${index}
             fi
@@ -206,29 +227,6 @@ _smart_f_highlight_all() {
         fi
     done
 
-    return 0
-}
-
-_smart_f_find_char() {
-    local -i search_direction=$1
-    local -i search_type=$2
-    local -i cursor_position_char_index=0
-    local buffer_for_find=$RBUFFER
-
-    if [[ ${search_direction} -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-        if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_T} ]]; then
-            cursor_position_char_index=1
-        fi
-    else
-        if [[ ${search_type} -eq ${SMART_F_SEARCH_TYPE_T} ]]; then
-            buffer_for_find=$LBUFFER
-            cursor_position_char_index=$(($(_smart_f_get_length ${LBUFFER})-1))
-        fi
-    fi
-
-    local cursor_position_char=${buffer_for_find:${cursor_position_char_index}:1}
-
-    echo $cursor_position_char
     return 0
 }
 
