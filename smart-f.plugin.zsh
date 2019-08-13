@@ -88,7 +88,7 @@ _smart_f_find() {
 
     local buffer_string=$(echo ${BUFFER})
 
-    for index in $(_smart_f_get_buffer_index_range ${search_direction} ${is_repeat}); do
+    for index in $(_smart_f_get_buffer_index_range ${search_direction} ${search_type} ${is_repeat}); do
         local char=${buffer_string:${index}:1}
 
         if "${Smart_f_enable_smart_case}"; then
@@ -130,57 +130,32 @@ _smart_f_smart_case() {
 
 _smart_f_get_buffer_index_range() {
     local -i search_direction=$1
-    local is_repeat=$2
+    local -i search_type=$2
+    local is_repeat=$3
 
     # 1文字ずつ
     # echo で制御文字が消えるっぽい
     local -i buffer_len=$(_smart_f_get_length ${BUFFER})
 
     if [[ $search_direction -eq ${SMART_F_SEARCH_FORWARD} ]]; then
-        if "${is_repeat}"; then
-            loop_start=$((${CURSOR}+1))
+        if [[ $search_type -eq ${SMART_F_SEARCH_TYPE_T} ]]; then
+            loop_start=$((${CURSOR}+2))
         else
-            loop_start=0
+            loop_start=$((${CURSOR}+1))
         fi
 
         loop_end=${buffer_len}
     else
-        if "${is_repeat}"; then
-            loop_start=$((${CURSOR}-1))
+        if [[ $search_type -eq ${SMART_F_SEARCH_TYPE_T} ]]; then
+            loop_start=$((${CURSOR}-2))
         else
-            loop_start=${buffer_len}
+            loop_start=$((${CURSOR}-1))
         fi
 
         loop_end=0
     fi
 
     echo $(seq ${loop_start} ${loop_end})
-}
-
-# 次のラインの行頭に移動する
-_smart_f_move_next_line() {
-    # 複数行移動する場合にはwidgetの先頭に.をつけると移動できない
-    # 次のラインに移動しない行末移動
-    zle vi-end-of-line
-    # 次のラインに移動する行末移動
-    zle end-of-line
-    # 前のラインに移動しない行頭移動
-    zle vi-beginning-of-line
-
-    return 0
-}
-
-# 前のラインの行末に移動する
-_smart_f_move_prev_line() {
-    # 複数行移動する場合にはwidgetの先頭に.をつけると移動できない
-    # 前のラインに移動しない行頭移動
-    zle vi-beginning-of-line
-    # 前のラインに移動する行頭移動
-    zle beginning-of-line
-    # 次のラインに移動しない行末移動
-    zle vi-end-of-line
-
-    return 0
 }
 
 _smart_f_highlight_all() {
