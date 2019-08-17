@@ -57,21 +57,14 @@ _smart_f() {
     local -i search_direction=$1
     local -i search_type=$2
 
-    if [[ ! -v Prev_cursor_pos ]]; then
-        Prev_cursor_pos=-1
-    fi
-
     _smart_f_find ${search_direction} ${search_type} ${Smart_f_is_repeat}
 
     if [[ $? -eq 0 ]]; then
-        Prev_cursor_pos=${CURSOR}
-
         if ! "${Smart_f_is_repeat}"; then
             _smart_f_highlight_all ${search_direction} ${search_type}
         fi
 
         Smart_f_is_repeat=true
-        return 0
     fi
 
     return 0
@@ -83,7 +76,14 @@ _smart_f_find() {
     local is_repeat=$3
 
     if ! "${is_repeat}"; then
+		local before_smart_f_current_char=${Smart_f_current_char}
         read -k1 Smart_f_current_char
+
+        # \n = 0a, \r = 0d
+        local charCode=`echo ${Smart_f_current_char} | xxd -p`
+        if [[ $charCode = '0a' || $charCode = '0d' || $charCode = '0d0a' ]]; then
+            Smart_f_current_char=${before_smart_f_current_char}
+        fi
     fi
 
     local buffer_string=$(echo ${BUFFER})
@@ -207,11 +207,6 @@ _smart_f_highlight_all() {
 
 _smart_f_get_length() {
     echo $(($(echo $1 | wc -m)-1))
-    return 0
-}
-
-_smart_f_get_num_of_lines() {
-    echo $(echo $1 | wc -l)
     return 0
 }
 
